@@ -152,7 +152,14 @@ function normalizeFormat(format?: string): OutputFormat | undefined {
 
 function isSupportedFormat(format: string): boolean {
 	const entry = sharp.format[format as keyof sharp.FormatEnum] ?? null;
-	return Boolean(entry?.output);
+	if (!entry) {
+		return false;
+	}
+	const { output } = entry;
+	if (!output) {
+		return false;
+	}
+	return Boolean(output.file || output.buffer || output.stream);
 }
 
 function clamp(value: number, min: number, max: number): number {
