@@ -1,0 +1,1 @@
+Before finishing a task, run `pnpm typecheck`, `pnpm test`, and `pnpm check` to ensure types, tests, and linting all pass. For CLI changes, optionally run `pnpm compress -- <sample-image>` to manually verify output behavior.

@@ -1,0 +1,4 @@
+- **Project**: sharp-compress-cli — a TypeScript/Node.js CLI for compressing and resizing images using the `sharp` library.
+- **Tech stack**: TypeScript (ESM), Node.js, pnpm, vitest for unit tests, Biome for lint/format, tsx for running the CLI entrypoint.
+- **Structure**: source files live in `src/` (CLI entrypoint `cli.ts`, image processing logic `compress.ts`, sample `sum.ts` + `sum.test.ts`), outputs expected under `out/`. Auxiliary config files include `tsconfig.json`, `biome.json`, `.vscode/` tasks.
+- **Notable dependencies**: runtime `sharp`, `tsx`; dev tooling `vitest`, `typescript`, `@biomejs/biome`.
