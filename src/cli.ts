@@ -1,19 +1,30 @@
 import path from "node:path";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { compressImage } from "./compress";
 
-async function main(): Promise<void> {
-	const { positionals, values } = parseArgs({
-		options: {
-			quality: { type: "string" },
-			maxWidth: { type: "string" },
-			maxHeight: { type: "string" },
-			format: { type: "string" },
-			outDir: { type: "string" },
-		},
-		allowPositionals: true,
-	});
+export async function main(): Promise<void> {
+	let positionals: string[];
+	let values: Record<string, string | boolean | undefined>;
+	try {
+		const parsed = parseArgs({
+			options: {
+				quality: { type: "string" },
+				maxWidth: { type: "string" },
+				maxHeight: { type: "string" },
+				format: { type: "string" },
+				outDir: { type: "string" },
+			},
+			allowPositionals: true,
+		});
+		positionals = parsed.positionals;
+		values = parsed.values;
+	} catch (error) {
+		console.error(error instanceof Error ? error.message : String(error));
+		process.exitCode = 1;
+		return;
+	}
 
 	const [inputPath] = positionals;
 	if (!inputPath) {
@@ -59,4 +70,10 @@ function pickString(value: string | boolean | undefined): string | undefined {
 	return typeof value === "string" ? value : undefined;
 }
 
-void main();
+const entryFile = process.argv[1];
+if (entryFile) {
+	const invokedFromCli = pathToFileURL(entryFile).href === import.meta.url;
+	if (invokedFromCli) {
+		void main();
+	}
+}

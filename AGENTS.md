@@ -12,5 +12,11 @@ Follow Biome defaults: tab indentation, double quotes, and trailing commas where
 ## Testing Guidelines
 Vitest is the required test runner; co-locate specs next to the modules they verify and name them `*.test.ts`. New features should include positive and edge-case coverage — for image helpers, mock sharp inputs or isolate format logic. Before opening a PR, run `pnpm test` and share the latest exit output. If you add async behavior, prefer `await expect(...).resolves` patterns to avoid false positives.
 
+After any code change, run the following commands in order to catch type, style, and behavioral issues before review:
+
+- `pnpm typecheck`
+- `pnpm check`
+- `pnpm test`
+
 ## Commit & Pull Request Guidelines
 Follow the existing Conventional Commit shorthand: `<type>: <summary>` in lowercase (e.g., `feat: add webp preset`). Group related code, tests, and docs in a single commit when feasible. Pull requests should summarize the change, list verification commands, and reference any tracked issues. Include CLI usage notes or screenshots when modifying user-facing behavior so reviewers can reproduce the flow quickly.
