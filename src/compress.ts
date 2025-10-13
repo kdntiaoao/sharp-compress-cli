@@ -125,7 +125,8 @@ function buildOutputFilePath(
 	format: OutputFormat,
 ): string {
 	const parsed = path.parse(inputPath);
-	return path.join(outputDir, `${parsed.name}.${format}`);
+	const extension = format === "jpeg" ? "jpg" : format;
+	return path.join(outputDir, `${parsed.name}.${extension}`);
 }
 
 function inferFormatFromPath(filePath: string): OutputFormat | undefined {

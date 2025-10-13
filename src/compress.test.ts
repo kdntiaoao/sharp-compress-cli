@@ -26,7 +26,7 @@ test("falls back to jpeg output for svg input", async () => {
 
 	const outputPath = await compressImage(inputPath, { outputDir });
 
-	expect(path.extname(outputPath)).toBe(".jpeg");
+	expect(path.extname(outputPath)).toBe(".jpg");
 	const outputStat = await stat(outputPath);
 	expect(outputStat.isFile()).toBe(true);
 });

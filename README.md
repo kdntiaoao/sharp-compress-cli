@@ -34,7 +34,7 @@ Use defaults to transcode an SVG (input-only format) into a JPEG thumbnail:
 
 ```bash
 pnpm compress ./icons/logo.svg
-# Saves to out/logo.jpeg with format fallback and no resizing
+# Saves to out/logo.jpg with format fallback and no resizing
 ```
 
 Create a square-friendly PNG with height-only constraint:
@@ -43,4 +43,4 @@ Create a square-friendly PNG with height-only constraint:
 pnpm compress ./photos/avatar.heic --maxHeight 512 --format png --outDir avatars
 ```
 
-Compressed files adopt the source filename with the chosen extension (`photo.jpeg`, `photo.webp`, etc.).
+Compressed files adopt the source filename with the chosen extension (`photo.jpg`, `photo.webp`, etc.).

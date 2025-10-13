@@ -36,7 +36,7 @@ describe("CLI", () => {
 	});
 
 	test("passes normalized options to compressImage", async () => {
-		const resolvedOutput = path.join(process.cwd(), "custom", "picture.jpeg");
+		const resolvedOutput = path.join(process.cwd(), "custom", "picture.jpg");
 		compressImageMock.mockResolvedValue(resolvedOutput);
 		process.argv = [
 			"node",
@@ -64,7 +64,7 @@ describe("CLI", () => {
 			outputDir: "custom",
 		});
 		expect(logSpy).toHaveBeenCalledWith(
-			`Output written to ${path.join("custom", "picture.jpeg")}`,
+			`Output written to ${path.join("custom", "picture.jpg")}`,
 		);
 		expect(process.exitCode).toBeUndefined();
 	});
@@ -82,7 +82,7 @@ describe("CLI", () => {
 	});
 
 	test("uses defaults when optional flags are omitted", async () => {
-		const resolvedOutput = path.join(process.cwd(), "out", "input.jpeg");
+		const resolvedOutput = path.join(process.cwd(), "out", "input.jpg");
 		compressImageMock.mockResolvedValue(resolvedOutput);
 		process.argv = ["node", "cli", "./input.png"];
 
@@ -96,7 +96,7 @@ describe("CLI", () => {
 			outputDir: undefined,
 		});
 		expect(logSpy).toHaveBeenCalledWith(
-			`Output written to ${path.join("out", "input.jpeg")}`,
+			`Output written to ${path.join("out", "input.jpg")}`,
 		);
 		expect(process.exitCode).toBeUndefined();
 	});
