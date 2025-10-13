@@ -9,7 +9,6 @@
 		"declaration": false,
 		"declarationMap": false,
 		"noUncheckedIndexedAccess": true,
-		"exactOptionalPropertyTypes": true,
 		"strict": true,
 		"verbatimModuleSyntax": true,
 		"isolatedModules": true,
