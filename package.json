@@ -8,5 +8,12 @@
 	"engines": {
 		"node": ">=24"
 	},
-	"packageManager": "pnpm@12.4.2"
+	"packageManager": "pnpm@12.4.2",
+	"devDependencies": {
+		"@types/node": "24.13.4",
+		"typescript": "7.0.2"
+	},
+	"scripts": {
+		"typecheck": "tsc"
+	}
 }
