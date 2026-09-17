@@ -1,26 +1,11 @@
 {
 	"name": "sharp-compress-cli",
 	"version": "1.0.0",
+	"private": true,
+	"description": "input/ に置いた画像を sharp で圧縮して out/ に書き出す CLI",
 	"type": "module",
-	"description": "",
-	"scripts": {
-		"test": "vitest run",
-		"compress": "tsx src/cli.ts",
-		"typecheck": "tsc --noEmit",
-		"check": "biome check src --write"
-	},
-	"keywords": [],
-	"author": "",
 	"license": "ISC",
-	"packageManager": "pnpm@10.15.0",
-	"dependencies": {
-		"sharp": "^0.34.4",
-		"tsx": "^4.20.6"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "2.2.5",
-		"@types/node": "^24.7.2",
-		"typescript": "^5.9.3",
-		"vitest": "^3.2.4"
+	"engines": {
+		"node": ">=24"
 	}
 }
