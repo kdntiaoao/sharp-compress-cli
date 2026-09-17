@@ -1,0 +1,3 @@
+# 公開直後の版は取り込まない(単位は分、4320 = 3 日)
+minimumReleaseAge: 4320
+saveExact: true
