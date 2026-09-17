@@ -10,7 +10,8 @@
 		"typecheck": "tsc",
 		"lint": "oxlint",
 		"format": "oxfmt",
-		"format:check": "oxfmt --check"
+		"format:check": "oxfmt --check",
+		"test": "node --test \"src/**/*.test.ts\""
 	},
 	"devDependencies": {
 		"@types/node": "24.13.4",
