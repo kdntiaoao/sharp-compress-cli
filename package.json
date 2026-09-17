@@ -3,17 +3,23 @@
 	"version": "1.0.0",
 	"private": true,
 	"description": "input/ に置いた画像を sharp で圧縮して out/ に書き出す CLI",
-	"type": "module",
 	"license": "ISC",
+	"type": "module",
+	"scripts": {
+		"typecheck": "tsc",
+		"lint": "oxlint",
+		"format": "oxfmt",
+		"format:check": "oxfmt --check"
+	},
+	"devDependencies": {
+		"@types/node": "24.13.4",
+		"lefthook": "2.1.12",
+		"oxfmt": "0.67.0",
+		"oxlint": "1.82.0",
+		"typescript": "7.0.2"
+	},
 	"engines": {
 		"node": ">=24"
 	},
-	"packageManager": "pnpm@12.4.2",
-	"devDependencies": {
-		"@types/node": "24.13.4",
-		"typescript": "7.0.2"
-	},
-	"scripts": {
-		"typecheck": "tsc"
-	}
+	"packageManager": "pnpm@12.4.2"
 }

@@ -1,9 +1,11 @@
 # sharp-compress-cli
 
 ## Overview
+
 `sharp-compress-cli` is a lightweight image compression utility powered by [sharp](https://sharp.pixelplumbing.com/). It resizes and re-encodes images from the command line while guarding against quality loss and unsupported formats.
 
 ## Installation
+
 Clone the repository and install dependencies:
 
 ```bash
@@ -11,6 +13,7 @@ pnpm install
 ```
 
 ## Usage
+
 Run the CLI through the bundled script:
 
 ```bash
