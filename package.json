@@ -11,7 +11,8 @@
 		"lint": "oxlint",
 		"format": "oxfmt",
 		"format:check": "oxfmt --check",
-		"test": "node --test \"src/**/*.test.ts\""
+		"test": "node --test \"src/**/*.test.ts\"",
+		"compress": "node src/cli.ts"
 	},
 	"dependencies": {
 		"sharp": "0.35.4"
