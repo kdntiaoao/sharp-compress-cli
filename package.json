@@ -6,6 +6,7 @@
 	"license": "ISC",
 	"type": "module",
 	"scripts": {
+		"prepare": "lefthook install",
 		"typecheck": "tsc",
 		"lint": "oxlint",
 		"format": "oxfmt",
