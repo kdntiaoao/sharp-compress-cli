@@ -1,17 +1,9 @@
 {
-	"hediet.vscode-drawio.theme": "kennedy",
-	"editor.defaultFormatter": "biomejs.biome",
-	"[html]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	},
+	"editor.defaultFormatter": "oxc.oxc-vscode",
 	"editor.formatOnSave": true,
 	"editor.codeActionsOnSave": {
-		"source.addMissingImports": "explicit",
-		"source.organizeImports.biome": "explicit",
-		"source.fixAll.biome": "explicit"
+		"source.fixAll.oxc": "explicit"
 	},
 	"typescript.preferences.preferTypeOnlyAutoImports": true,
-	"typescript.tsdk": "node_modules/typescript/lib",
-
-	"cSpell.words": []
+	"typescript.tsdk": "node_modules/typescript/lib"
 }

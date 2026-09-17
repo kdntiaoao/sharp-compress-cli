@@ -1,46 +1,64 @@
 # sharp-compress-cli
 
-## Overview
-`sharp-compress-cli` is a lightweight image compression utility powered by [sharp](https://sharp.pixelplumbing.com/). It resizes and re-encodes images from the command line while guarding against quality loss and unsupported formats.
+`input/` に置いた画像を [sharp](https://sharp.pixelplumbing.com/) で圧縮し、同じディレクトリ構造で `out/` に書き出すコマンドラインツール。
 
-## Installation
-Clone the repository and install dependencies:
+## 必要なもの
+
+- Node.js 24 以上（TypeScript をそのまま実行するため）
+- pnpm 12
+
+## 準備
 
 ```bash
 pnpm install
 ```
 
-## Usage
-Run the CLI through the bundled script:
+## 使い方
+
+`input/` に画像を置いて実行する。サブディレクトリはそのまま `out/` に写す。
 
 ```bash
-pnpm compress <inputPath> [--quality 80] [--maxWidth 1280] [--maxHeight 720] [--format webp] [--outDir dist]
+pnpm compress [オプション]
 ```
 
-- `--quality` (1-100) controls encoder quality; omitted values fall back to the format default.
-- `--maxWidth` / `--maxHeight` resize with `fit: inside` while preventing upscaling.
-- `--format` normalizes aliases (e.g. `jpg` → `jpeg`) and rejects sharp formats that cannot write files.
-- `--outDir` defaults to `out/` and will be created if missing.
+| オプション     | 値                               | 動作                                                                                 |
+| -------------- | -------------------------------- | ------------------------------------------------------------------------------------ |
+| `--quality`    | 1〜100                           | エンコード品質。省略時は sharp のフォーマット別既定値（JPEG 80 / WebP 80 / AVIF 50） |
+| `--max-width`  | ピクセル                         | この幅に収まるよう縮小する。拡大はしない                                             |
+| `--max-height` | ピクセル                         | この高さに収まるよう縮小する。拡大はしない                                           |
+| `--format`     | `jpeg` / `png` / `webp` / `avif` | 出力フォーマットを変える。`jpg` は `jpeg` として扱う                                 |
+| `--help`       |                                  | 説明を表示する                                                                       |
 
-### Examples
-
-Convert a JPEG to WebP while resizing and preserving detail:
+例:
 
 ```bash
-pnpm compress ./assets/hero.jpg --maxWidth 1600 --quality 75 --format webp
+# フォーマットも寸法も変えず、品質だけ落として再エンコードする
+pnpm compress
+
+# 幅 1600px に収めて WebP にする
+pnpm compress --max-width 1600 --format webp --quality 75
 ```
 
-Use defaults to transcode an SVG (input-only format) into a JPEG thumbnail:
+## 振る舞い
 
-```bash
-pnpm compress ./icons/logo.svg
-# Saves to out/logo.jpg with format fallback and no resizing
-```
+- 走査する拡張子は jpg / jpeg / png / webp / avif / gif / tif / tiff / svg。それ以外のファイルは触らず、合計欄に「対象外」として件数だけ出す。隠しファイルは数えない
+- 出力の拡張子は `.jpg` / `.png` / `.webp` / `.avif` に小文字で揃える
+- PNG は `--quality` を省略すると可逆のまま圧縮し、指定するとパレット化して非可逆になる
+- 写真の向きは画素に焼き込み、EXIF や ICC などのメタデータはすべて落とす
+- リサイズもフォーマット変更もしていないのに元より大きくなったら、元ファイルをそのままコピーする
+- gif / tif / svg は `--format` があればその形式に変換し、無ければそのままコピーする
+- アニメーション画像は失敗として報告し、静止画には潰さない
+- 同じ出力パスになるファイル（`a.jpg` と `a.jpeg` など）があれば、何も書かずに終了する
+- `out/` に前回の結果が残っていれば、すべて削除して良いか確認してから始める。端末以外から実行したときは確認できないので終了する
+- 1 ファイルの失敗では止まらず、最後に失敗一覧を出す。1 件でも失敗があれば終了コードは 1
 
-Create a square-friendly PNG with height-only constraint:
+## 開発
 
-```bash
-pnpm compress ./photos/avatar.heic --maxHeight 512 --format png --outDir avatars
-```
+| コマンド         | 内容                           |
+| ---------------- | ------------------------------ |
+| `pnpm test`      | `node:test` でテストを実行する |
+| `pnpm typecheck` | tsc で型検査する               |
+| `pnpm lint`      | oxlint                         |
+| `pnpm format`    | oxfmt で整形する               |
 
-Compressed files adopt the source filename with the chosen extension (`photo.jpg`, `photo.webp`, etc.).
+コミット時は lefthook が oxlint・oxfmt・tsc を実行し、自動修正はそのコミットに含まれる。用語は [CONTEXT.md](./CONTEXT.md) に従う。

@@ -1,79 +1,75 @@
+import { access } from "node:fs/promises";
 import path from "node:path";
-import process from "node:process";
-import { pathToFileURL } from "node:url";
-import { parseArgs } from "node:util";
-import { compressImage } from "./compress";
 
-export async function main(): Promise<void> {
-	let positionals: string[];
-	let values: Record<string, string | boolean | undefined>;
-	try {
-		const parsed = parseArgs({
-			options: {
-				quality: { type: "string" },
-				maxWidth: { type: "string" },
-				maxHeight: { type: "string" },
-				format: { type: "string" },
-				outDir: { type: "string" },
-			},
-			allowPositionals: true,
-		});
-		positionals = parsed.positionals;
-		values = parsed.values;
-	} catch (error) {
-		console.error(error instanceof Error ? error.message : String(error));
-		process.exitCode = 1;
-		return;
+import { ArgsError, HELP, parseCliArgs } from "./args.ts";
+import { executePlan } from "./compress.ts";
+import { mapWithConcurrency } from "./concurrency.ts";
+import { OutputDirNotEmptyError, prepareOutputDir } from "./output-dir.ts";
+import { findTargetCollisions, planFile } from "./plan.ts";
+import { formatResult, formatSummary } from "./report.ts";
+import { walkImages } from "./walk.ts";
+
+const CONCURRENCY = 4;
+
+export async function main(argv: readonly string[]): Promise<number> {
+	const parsed = parseCliArgs(argv);
+	if (parsed.kind === "help") {
+		process.stdout.write(HELP);
+		return 0;
+	}
+	const inputDir = path.resolve("input");
+	const outputDir = path.resolve("out");
+	await access(inputDir).catch(() => {
+		throw new UsageError(`${inputDir} が無い。画像を置いた input/ をリポジトリ直下に用意する`);
+	});
+
+	const { images, skipped } = await walkImages(inputDir);
+	if (images.length === 0) {
+		throw new UsageError(`${inputDir} に画像が無い`);
 	}
 
-	const [inputPath] = positionals;
-	if (!inputPath) {
-		console.error(
-			"Usage: pnpm compress -- <inputPath> [--quality 80] [--maxWidth 1280] [--maxHeight 720] [--format webp] [--outDir dist]",
+	const plans = images.map((image) => planFile(image, parsed.options));
+	const collisions = findTargetCollisions(plans);
+	if (collisions.size > 0) {
+		const lines = [...collisions].map(([target, sources]) => `  ${target} ← ${sources.join(", ")}`);
+		throw new UsageError(
+			`出力先が同じになるファイルがある。名前を変えるか片方を退避する:\n${lines.join("\n")}`,
 		);
-		process.exitCode = 1;
-		return;
 	}
 
+	const prepared = await prepareOutputDir(outputDir, {
+		input: process.stdin,
+		output: process.stderr,
+		interactive: process.stdin.isTTY === true,
+	});
+	if (prepared === "declined") {
+		process.stderr.write("中止した\n");
+		return 0;
+	}
+
+	const results = await mapWithConcurrency(
+		plans,
+		CONCURRENCY,
+		(plan) => executePlan(plan, parsed.options, { inputDir, outputDir }),
+		(result) => process.stdout.write(`${formatResult(result)}\n`),
+	);
+	process.stdout.write(`\n${formatSummary(results, skipped)}\n`);
+	return results.some((result) => result.kind === "failed") ? 1 : 0;
+}
+
+class UsageError extends Error {}
+
+if (import.meta.main) {
 	try {
-		const output = await compressImage(inputPath, {
-			quality: parseOptionalNumber(values.quality, "quality"),
-			maxWidth: parseOptionalNumber(values.maxWidth, "maxWidth"),
-			maxHeight: parseOptionalNumber(values.maxHeight, "maxHeight"),
-			format: pickString(values.format),
-			outputDir: pickString(values.outDir),
-		});
-		const relativeOutput = path.relative(process.cwd(), output);
-		console.log(`Output written to ${relativeOutput}`);
+		process.exitCode = await main(process.argv.slice(2));
 	} catch (error) {
-		console.error(error instanceof Error ? error.message : String(error));
+		if (error instanceof ArgsError) {
+			process.stderr.write(`${error.message}\n\n${HELP}`);
+		} else if (error instanceof UsageError || error instanceof OutputDirNotEmptyError) {
+			process.stderr.write(`${error.message}\n`);
+		} else {
+			throw error;
+		}
 		process.exitCode = 1;
-	}
-}
-
-function parseOptionalNumber(
-	value: string | boolean | undefined,
-	label: string,
-): number | undefined {
-	const text = pickString(value);
-	if (text === undefined) {
-		return undefined;
-	}
-	const parsed = Number(text);
-	if (!Number.isFinite(parsed)) {
-		throw new Error(`Option "${label}" must be a finite number.`);
-	}
-	return parsed;
-}
-
-function pickString(value: string | boolean | undefined): string | undefined {
-	return typeof value === "string" ? value : undefined;
-}
-
-const entryFile = process.argv[1];
-if (entryFile) {
-	const invokedFromCli = pathToFileURL(entryFile).href === import.meta.url;
-	if (invokedFromCli) {
-		void main();
 	}
 }

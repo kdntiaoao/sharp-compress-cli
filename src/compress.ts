@@ -1,168 +1,108 @@
-import { access, mkdir, stat } from "node:fs/promises";
+import { copyFile, mkdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import sharp from "sharp";
 
-export type OutputFormat = keyof sharp.FormatEnum;
+import sharp, { type Sharp } from "sharp";
 
-export interface CompressOptions {
-	quality?: number;
-	maxWidth?: number;
-	maxHeight?: number;
-	format?: string;
-	outputDir?: string;
+import { type OutputFormat, extensionOf, formatOfExtension } from "./format.ts";
+import type { CompressOptions, Plan } from "./plan.ts";
+
+export type Directories = { inputDir: string; outputDir: string };
+
+export type FileResult =
+	| { kind: "compressed"; source: string; target: string; inputBytes: number; outputBytes: number }
+	| { kind: "copied"; source: string; target: string; bytes: number; reason: CopyReason }
+	| { kind: "failed"; source: string; message: string };
+
+/** larger: 圧縮すると元より大きくなった / unsupported: 出力フォーマットが無い */
+export type CopyReason = "larger" | "unsupported";
+
+export class UnsupportedImageError extends Error {}
+
+export async function executePlan(
+	plan: Plan,
+	options: CompressOptions,
+	directories: Directories,
+): Promise<FileResult> {
+	try {
+		return plan.kind === "copy"
+			? await copy(plan, directories, "unsupported")
+			: await compress(plan, options, directories);
+	} catch (error) {
+		return {
+			kind: "failed",
+			source: plan.source,
+			message: error instanceof Error ? error.message : String(error),
+		};
+	}
 }
 
-const DEFAULT_OUTPUT_DIR = "out";
-const QUALITY_MIN = 1;
-const QUALITY_MAX = 100;
+async function copy(
+	plan: Plan,
+	{ inputDir, outputDir }: Directories,
+	reason: CopyReason,
+): Promise<FileResult> {
+	const sourcePath = path.join(inputDir, plan.source);
+	const targetPath = path.join(outputDir, plan.target);
+	await mkdir(path.dirname(targetPath), { recursive: true });
+	await copyFile(sourcePath, targetPath);
+	const { size } = await stat(sourcePath);
+	return { kind: "copied", source: plan.source, target: plan.target, bytes: size, reason };
+}
 
-export async function compressImage(
-	inputPath: string,
-	options: CompressOptions = {},
-): Promise<string> {
-	await ensureReadableFile(inputPath);
+async function compress(
+	plan: Extract<Plan, { kind: "compress" }>,
+	options: CompressOptions,
+	directories: Directories,
+): Promise<FileResult> {
+	const sourcePath = path.join(directories.inputDir, plan.source);
+	const targetPath = path.join(directories.outputDir, plan.target);
 
-	const {
-		quality,
-		maxWidth,
-		maxHeight,
-		format: requestedFormat,
-		outputDir = DEFAULT_OUTPUT_DIR,
-	} = options;
+	const metadata = await sharp(sourcePath).metadata();
+	if ((metadata.pages ?? 1) > 1) {
+		throw new UnsupportedImageError("アニメーション画像には対応していない");
+	}
 
-	const normalizedFormat =
-		normalizeFormat(requestedFormat) ??
-		inferFormatFromPath(inputPath) ??
-		"jpeg";
-	const normalizedQuality =
-		typeof quality === "number"
-			? clamp(Math.round(quality), QUALITY_MIN, QUALITY_MAX)
-			: undefined;
-
-	const resolvedOutputDir = path.resolve(process.cwd(), outputDir);
-	await mkdir(resolvedOutputDir, { recursive: true });
-
-	const outputFile = buildOutputFilePath(
-		resolvedOutputDir,
-		inputPath,
-		normalizedFormat,
-	);
-
-	let transformer = sharp(inputPath);
-
-	if (shouldResize(maxWidth, maxHeight)) {
-		transformer = transformer.resize({
-			width: sanitizeDimension(maxWidth),
-			height: sanitizeDimension(maxHeight),
+	let pipeline = sharp(sourcePath).autoOrient();
+	const resizes = options.maxWidth !== undefined || options.maxHeight !== undefined;
+	if (resizes) {
+		pipeline = pipeline.resize({
+			width: options.maxWidth,
+			height: options.maxHeight,
 			fit: "inside",
 			withoutEnlargement: true,
 		});
 	}
+	const output = await encode(pipeline, plan.format, options.quality).toBuffer();
 
-	transformer = applyFormat(transformer, normalizedFormat, normalizedQuality);
-
-	await transformer.toFile(outputFile);
-	return outputFile;
-}
-
-async function ensureReadableFile(filePath: string): Promise<void> {
-	try {
-		const fileStat = await stat(filePath);
-		if (!fileStat.isFile()) {
-			throw new Error(
-				`Expected a file but received a different path: ${filePath}`,
-			);
-		}
-		await access(filePath);
-	} catch {
-		throw new Error(`Input file is not accessible: ${filePath}`);
+	const { size: inputBytes } = await stat(sourcePath);
+	const sameFormat = formatOfExtension(extensionOf(plan.source)) === plan.format;
+	if (sameFormat && !resizes && output.byteLength >= inputBytes) {
+		return copy(plan, directories, "larger");
 	}
+
+	await mkdir(path.dirname(targetPath), { recursive: true });
+	await writeFile(targetPath, output);
+	return {
+		kind: "compressed",
+		source: plan.source,
+		target: plan.target,
+		inputBytes,
+		outputBytes: output.byteLength,
+	};
 }
 
-function sanitizeDimension(value?: number): number | undefined {
-	if (typeof value !== "number" || !Number.isFinite(value)) {
-		return undefined;
-	}
-	const rounded = Math.round(value);
-	return rounded > 0 ? rounded : undefined;
-}
-
-function shouldResize(maxWidth?: number, maxHeight?: number): boolean {
-	return Boolean(sanitizeDimension(maxWidth) || sanitizeDimension(maxHeight));
-}
-
-function applyFormat(
-	instance: sharp.Sharp,
-	format: OutputFormat,
-	quality?: number,
-): sharp.Sharp {
+function encode(pipeline: Sharp, format: OutputFormat, quality: number | undefined) {
 	switch (format) {
 		case "jpeg":
-			return instance.jpeg({
-				quality,
-				mozjpeg: true,
-			});
+			return pipeline.jpeg(quality === undefined ? {} : { quality });
 		case "webp":
-			return instance.webp({ quality });
+			return pipeline.webp(quality === undefined ? {} : { quality });
 		case "avif":
-			return instance.avif({ quality });
-		case "heif":
-			return instance.heif({ quality });
-		case "tiff":
-			return instance.tiff({ quality });
+			return pipeline.avif(quality === undefined ? {} : { quality });
 		case "png":
-			return instance.png({
-				quality,
-			});
-		default:
-			return instance.toFormat(format);
+			// quality 指定が無いときは可逆のまま圧縮率だけ最大にする
+			return pipeline.png(
+				quality === undefined ? { compressionLevel: 9 } : { palette: true, quality },
+			);
 	}
-}
-
-function buildOutputFilePath(
-	outputDir: string,
-	inputPath: string,
-	format: OutputFormat,
-): string {
-	const parsed = path.parse(inputPath);
-	const extension = format === "jpeg" ? "jpg" : format;
-	return path.join(outputDir, `${parsed.name}.${extension}`);
-}
-
-function inferFormatFromPath(filePath: string): OutputFormat | undefined {
-	const ext = path.extname(filePath).slice(1);
-	if (!ext) {
-		return undefined;
-	}
-	return normalizeFormat(ext);
-}
-
-function normalizeFormat(format?: string): OutputFormat | undefined {
-	if (!format) {
-		return undefined;
-	}
-	const lower = format.toLowerCase();
-	const aliasMap: Record<string, OutputFormat> = {
-		jpg: "jpeg",
-		jfif: "jpeg",
-		tif: "tiff",
-	};
-	const candidate = (aliasMap[lower] ?? lower) as string;
-	return isSupportedFormat(candidate) ? (candidate as OutputFormat) : undefined;
-}
-
-function isSupportedFormat(format: string): boolean {
-	const entry = sharp.format[format as keyof sharp.FormatEnum] ?? null;
-	if (!entry) {
-		return false;
-	}
-	const { output } = entry;
-	if (!output) {
-		return false;
-	}
-	return Boolean(output.file || output.buffer || output.stream);
-}
-
-function clamp(value: number, min: number, max: number): number {
-	return Math.min(Math.max(value, min), max);
 }
