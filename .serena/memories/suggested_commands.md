@@ -1,4 +1,0 @@
-- `pnpm test` — run vitest test suite.
-- `pnpm typecheck` — run TypeScript compiler with `--noEmit`.
-- `pnpm check` — run Biome lint/format over `src`.
-- `pnpm compress -- <inputPath> [options]` — execute the CLI via tsx to compress an image.

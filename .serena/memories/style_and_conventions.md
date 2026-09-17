@@ -1,4 +1,0 @@
-- TypeScript strict mode enabled (e.g., `strict`, `noUncheckedIndexedAccess`, `isolatedModules`, `verbatimModuleSyntax`); prefer keeping type safety high.
-- Code formatted via Biome; keep imports ESM-style and leverage async/await with proper error handling.
-- CLI code prefers small helpers for parsing and sanitation (e.g., `parseOptionalNumber`, `pickString`).
-- Favor explicit return types on exported functions.
