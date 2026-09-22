@@ -20,6 +20,14 @@ describe("planFile", () => {
 			format: "webp",
 		});
 	});
+	it("NFD のファイル名は出力側で NFC に揃える", () => {
+		const nfd = "カテゴリ.jpg".normalize("NFD");
+		const nfc = "カテゴリ.jpg".normalize("NFC");
+		assert.notEqual(nfd, nfc);
+		assert.equal(planFile(nfd, {}).target, nfc);
+		assert.equal(planFile(nfd, {}).source, nfd);
+		assert.equal(planFile(`${nfd}.svg`, {}).target, `${nfc}.svg`);
+	});
 	it("gif / tif / svg は --format が無ければコピー", () => {
 		assert.deepEqual(planFile("logo.svg", {}), {
 			kind: "copy",
