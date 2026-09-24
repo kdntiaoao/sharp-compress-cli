@@ -6,6 +6,7 @@ import type { CompressOptions } from "./plan.ts";
 export const HELP = `使い方: pnpm compress [オプション]
 
 input/ の画像を圧縮し、同じディレクトリ構造で out/ に書き出す。
+書き出せた画像は input/ から消す。
 
 オプション:
   --quality <1-100>     エンコード品質。省略時はフォーマットごとの既定値

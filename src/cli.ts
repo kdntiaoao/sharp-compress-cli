@@ -2,6 +2,7 @@ import { access } from "node:fs/promises";
 import path from "node:path";
 
 import { ArgsError, HELP, parseCliArgs } from "./args.ts";
+import { removeProcessedInputs } from "./cleanup.ts";
 import { executePlan } from "./compress.ts";
 import { mapWithConcurrency } from "./concurrency.ts";
 import { OutputDirNotEmptyError, prepareOutputDir } from "./output-dir.ts";
@@ -54,6 +55,8 @@ export async function main(argv: readonly string[]): Promise<number> {
 		(result) => process.stdout.write(`${formatResult(result)}\n`),
 	);
 	process.stdout.write(`\n${formatSummary(results, skipped)}\n`);
+	const removed = await removeProcessedInputs(results, inputDir);
+	process.stdout.write(`${inputDir} から ${removed} 件を削除\n`);
 	return results.some((result) => result.kind === "failed") ? 1 : 0;
 }
 
